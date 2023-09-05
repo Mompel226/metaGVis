@@ -1,7 +1,7 @@
 #' @title Unclassified ranks
 #'
 #' @description
-#' This function is used to rename unclassified/n.a taxonomic ranks.
+#' This function is used to rename unclassified/n.a taxa using the information of their higher taxonomic ranks.
 #' In case of having an unclassified genera, it will replace it by something like: Unidentified (Family: ...).
 #' If the Family rank is also unclassified then it will replace it by Unidentified (Order: ...) if using the short mode
 #' or Unidentified (Order: ..., Family: N.A) if using the long mode.
@@ -39,8 +39,7 @@
 unclassified_ranks <- function(physeq, rank, word, format = "short", agglomerate = FALSE, count = FALSE, output = "physeq"){
 
   stop_quietly <- function() {
-    opt <- options(show.error.messages = FALSE)
-    on.exit(options(opt))
+    on.exit(options(show.error.messages = FALSE))
     stop()
   }
 
@@ -49,8 +48,8 @@ unclassified_ranks <- function(physeq, rank, word, format = "short", agglomerate
     stop_quietly()
   }
 
-  if(!rank %in% c ("Species", "Genus", "Family", "Order", "Class", "Phylum")){
-    cat("Specified rank is incorrect. Check spelling or rank names.\nTaxonomic names in this function are defined as:\nPhylum-Class-Order-Family-Genus-Species\n")
+  if(!rank %in% c ("Species", "Genus", "Family", "Order", "Class", "Phylum", "Domain")){
+    cat("Specified rank is incorrect. Check spelling or rank names.\nTaxonomic names in this function are defined as:\nDomain-Phylum-Class-Order-Family-Genus-Species\n")
     stop_quietly()
   }
 
@@ -79,8 +78,6 @@ unclassified_ranks <- function(physeq, rank, word, format = "short", agglomerate
     upper_rank <- c ("Phylum", "Domain", "NA", "NA", "NA")
   } else if (rank == "Phylum"){
     upper_rank <- c ("Domain", "NA", "NA", "NA", "NA")
-  } else if (rank == "Domain"){
-    upper_rank <- c ("NA", "NA", "NA", "NA", "NA")
   }
 
   # Some tools use n.a for unclassifed ranks other use "unclassified" or similar strings.
@@ -92,116 +89,129 @@ unclassified_ranks <- function(physeq, rank, word, format = "short", agglomerate
     }
   }
 
-  # Check if any taxnames are "unclassified" and change them
-  taxnames = physeq@tax_table[,rank]
-  if(any(taxnames == word)){
-    NAs_upperclass1 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == word]
-    if(format == "short"){
-      name = paste0("Unidentified (", upper_rank[1], ": ", NAs_upperclass1, ")")
-    } else {
-      name = paste0("Unidentified ", rank, " (",upper_rank[1], ": ", NAs_upperclass1, ")")
-    }
-    physeq@tax_table[,rank][physeq@tax_table[,rank] == word] <- name
+  if (rank != "Domain"){
+    # Check if any taxnames are "unclassified" and change them
     taxnames = physeq@tax_table[,rank]
-  }
-
-  # If by any chance two levels are identical - e.g.Genus "unclassified" and same Family, then add Order:
-  if(format != "short"){
-    identifier = paste0("Unidentified ", rank, " (", upper_rank[1], ": N.A)")
-  } else {
-    identifier = paste0("Unidentified (", upper_rank[1], ": N.A)")
-  }
-  if (!any(grep("Domain: N.A", identifier))){
-    if(any(taxnames == identifier)){
-      NAs_upperclass2 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass1v2 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
+    if(any(taxnames == word)){
+      NAs_upperclass1 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == word]
       if(format == "short"){
-        name = paste0("Unidentified (", upper_rank[2], ": ", NAs_upperclass2, ")")
+        name = paste0("Unidentified (", upper_rank[1], ": ", NAs_upperclass1, ")")
       } else {
-        name = paste0("Unidentified ", rank, " (", upper_rank[2], ": ", NAs_upperclass2, "; ", upper_rank[1], ": ", NAs_upperclass1v2, ")")
+        name = paste0("Unidentified ", rank, " (",upper_rank[1], ": ", NAs_upperclass1, ")")
       }
-      physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
+      physeq@tax_table[,rank][physeq@tax_table[,rank] == word] <- name
       taxnames = physeq@tax_table[,rank]
     }
-  }
 
-  # If by any chance three levels are identical - e.g.Genus "unclassified" and same for Family and Order, then add Class:
-  if(format != "short"){
-    identifier = paste0("Unidentified ", rank, " (", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
-  } else {
-    identifier = paste0("Unidentified (", upper_rank[2], ": N.A)")
-  }
-  if (!any(grep("Domain: N.A", identifier))){
-    if(any(taxnames == identifier)){
-      NAs_upperclass3 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass1v3 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass2v1 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
-      if(format == "short"){
-        name = paste0("Unidentified (", upper_rank[3], ": ", NAs_upperclass3, ")")
-      } else {
-        name = paste0("Unidentified ", rank, " (", upper_rank[3], ": ", NAs_upperclass3, "; ", upper_rank[2], ": ", NAs_upperclass2v1, "; ", upper_rank[1], ": ", NAs_upperclass1v3, ")")
+    # If by any chance two levels are identical - e.g.Genus "unclassified" and same Family, then add Order:
+    if(format != "short"){
+      identifier = paste0("Unidentified ", rank, " (", upper_rank[1], ": N.A)")
+    } else {
+      identifier = paste0("Unidentified (", upper_rank[1], ": N.A)")
+    }
+    if (!any(grep("Domain: N.A", identifier))){
+      if(any(taxnames == identifier)){
+        NAs_upperclass2 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass1v2 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
+        if(format == "short"){
+          name = paste0("Unidentified (", upper_rank[2], ": ", NAs_upperclass2, ")")
+        } else {
+          name = paste0("Unidentified ", rank, " (", upper_rank[2], ": ", NAs_upperclass2, "; ", upper_rank[1], ": ", NAs_upperclass1v2, ")")
+        }
+        physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
+        taxnames = physeq@tax_table[,rank]
       }
-      physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
-      taxnames = physeq@tax_table[,rank]
+    }
+
+    # If by any chance three levels are identical - e.g.Genus "unclassified" and same for Family and Order, then add Class:
+    if(format != "short"){
+      identifier = paste0("Unidentified ", rank, " (", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
+    } else {
+      identifier = paste0("Unidentified (", upper_rank[2], ": N.A)")
+    }
+    if (!any(grep("Domain: N.A", identifier))){
+      if(any(taxnames == identifier)){
+        NAs_upperclass3 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass1v3 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass2v1 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
+        if(format == "short"){
+          name = paste0("Unidentified (", upper_rank[3], ": ", NAs_upperclass3, ")")
+        } else {
+          name = paste0("Unidentified ", rank, " (", upper_rank[3], ": ", NAs_upperclass3, "; ", upper_rank[2], ": ", NAs_upperclass2v1, "; ", upper_rank[1], ": ", NAs_upperclass1v3, ")")
+        }
+        physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
+        taxnames = physeq@tax_table[,rank]
+      }
+    }
+
+    # If by any chance four levels are identical - e.g.Genus "unclassified" and same for Family, Order and Class, then add Phylum:
+    if(format != "short"){
+      identifier = paste0("Unidentified ", rank, " (", upper_rank[3], ": N.A; ", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
+    } else {
+      identifier = paste0("Unidentified (", upper_rank[3], ": N.A)")
+    }
+    if (!any(grep("Domain: N.A", identifier))){
+      if(any(taxnames == identifier)){
+        NAs_upperclass4 <- physeq@tax_table[,upper_rank[4]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass1v4 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass2v2 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass3v1 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
+        if(format == "short"){
+          name = paste0("Unidentified (", upper_rank[4], ": ", NAs_upperclass4, ")")
+        } else {
+          name = paste0("Unidentified ", rank, " (", upper_rank[4], ": ", NAs_upperclass4, "; ", upper_rank[3], ": ", NAs_upperclass3v1, "; ", upper_rank[2], ": ", NAs_upperclass2v2, "; ", upper_rank[1], ": ", NAs_upperclass1v4, ")")
+        }
+        physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
+        taxnames = physeq@tax_table[,rank]
+      }
+    }
+
+    # If by any chance five levels are identical - e.g.Genus "unclassified" and same for Family, Order, Class and Phylum, then add Domain:
+    if(format != "short"){
+      identifier = paste0("Unidentified ", rank, " (", upper_rank[4], ": N.A; ", upper_rank[3], ": N.A; ", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
+    } else {
+      identifier = paste0("Unidentified (", upper_rank[4], ": N.A)")
+    }
+    if (!any(grep("Domain: N.A", identifier))){
+      if(any(taxnames == identifier)){
+        NAs_upperclass5 <- physeq@tax_table[,upper_rank[5]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass1v5 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass2v3 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass3v2 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
+        NAs_upperclass4v1 <- physeq@tax_table[,upper_rank[4]][physeq@tax_table[,rank] == identifier]
+        if(format == "short"){
+          name = paste0("Unidentified (", upper_rank[5], ": ", NAs_upperclass5, ")")
+        } else {
+          name = paste0("Unidentified ", rank, " (", upper_rank[5], ": ", NAs_upperclass5, "; ", upper_rank[4], ": ", NAs_upperclass4v1, "; ", upper_rank[3], ": ", NAs_upperclass3v2, "; ", upper_rank[2], ": ", NAs_upperclass2v3, "; ", upper_rank[1], ": ", NAs_upperclass1v5, ")")
+        }
+        physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
+        taxnames = physeq@tax_table[,rank]
+      }
     }
   }
-
-  # If by any chance four levels are identical - e.g.Genus "unclassified" and same for Family, Order and Class, then add Phylum:
-  if(format != "short"){
-    identifier = paste0("Unidentified ", rank, " (", upper_rank[3], ": N.A; ", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
-  } else {
-    identifier = paste0("Unidentified (", upper_rank[3], ": N.A)")
-  }
-  if (!any(grep("Domain: N.A", identifier))){
-    if(any(taxnames == identifier)){
-      NAs_upperclass4 <- physeq@tax_table[,upper_rank[4]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass1v4 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass2v2 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass3v1 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
-      if(format == "short"){
-        name = paste0("Unidentified (", upper_rank[4], ": ", NAs_upperclass4, ")")
-      } else {
-        name = paste0("Unidentified ", rank, " (", upper_rank[4], ": ", NAs_upperclass4, "; ", upper_rank[3], ": ", NAs_upperclass3v1, "; ", upper_rank[2], ": ", NAs_upperclass2v2, "; ", upper_rank[1], ": ", NAs_upperclass1v4, ")")
-      }
-      physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
-      taxnames = physeq@tax_table[,rank]
-    }
-  }
-
-  # If by any chance five levels are identical - e.g.Genus "unclassified" and same for Family, Order, Class and Phylum, then add Domain:
-  if(format != "short"){
-    identifier = paste0("Unidentified ", rank, " (", upper_rank[4], ": N.A; ", upper_rank[3], ": N.A; ", upper_rank[2], ": N.A; ", upper_rank[1], ": N.A)")
-  } else {
-    identifier = paste0("Unidentified (", upper_rank[4], ": N.A)")
-  }
-  if (!any(grep("Domain: N.A", identifier))){
-    if(any(taxnames == identifier)){
-      NAs_upperclass5 <- physeq@tax_table[,upper_rank[5]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass1v5 <- physeq@tax_table[,upper_rank[1]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass2v3 <- physeq@tax_table[,upper_rank[2]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass3v2 <- physeq@tax_table[,upper_rank[3]][physeq@tax_table[,rank] == identifier]
-      NAs_upperclass4v1 <- physeq@tax_table[,upper_rank[4]][physeq@tax_table[,rank] == identifier]
-      if(format == "short"){
-        name = paste0("Unidentified (", upper_rank[5], ": ", NAs_upperclass5, ")")
-      } else {
-        name = paste0("Unidentified ", rank, " (", upper_rank[5], ": ", NAs_upperclass5, "; ", upper_rank[4], ": ", NAs_upperclass4v1, "; ", upper_rank[3], ": ", NAs_upperclass3v2, "; ", upper_rank[2], ": ", NAs_upperclass2v3, "; ", upper_rank[1], ": ", NAs_upperclass1v5, ")")
-      }
-      physeq@tax_table[,rank][physeq@tax_table[,rank] == identifier] <- name
-      taxnames = physeq@tax_table[,rank]
-    }
-  }
-
   # Agglomerate
   if (isTRUE(agglomerate)){
     agg.physeq <- phyloseq::tax_glom(physeq, taxrank = rank, NArm=FALSE)
     if (isTRUE(count) & rank != "Species"){
       n.rank  <- which(rank_names(physeq) %in% rank)
       # Concatenate taxa names up to one taxrank column in case some names are identical in the specified rank but not in the upper one.
-      concat.taxa <- physeq@tax_table[,c(n.rank-1, n.rank)]
-      ASV.preval <- table(paste0(concat.taxa[,1],";", concat.taxa[,2])) # table of the counts
+      if(rank != "Domain"){
+        concat.taxa <- physeq@tax_table[,c(n.rank-1, n.rank)]
+        ASV.preval <- table(paste0(concat.taxa[,1],";", concat.taxa[,2]))
+      } else {
+        concat.taxa <- physeq@tax_table[,c(n.rank)]
+        ASV.preval <- table(paste0(concat.taxa[,1]))
+      }
+      # table of the counts
       name_with_counts <- as.vector(paste0(rownames(ASV.preval)," (",ASV.preval,")"))
       name_with_counts <- sort(gsub("^.*;", "", name_with_counts)) # remove upper rank
-      agg.physeq@tax_table[,rank][order(agg.physeq@tax_table[,rank])] <- make.unique(name_with_counts)
+      ord.data <- agg.physeq@tax_table[,rank][order(agg.physeq@tax_table[,rank])]
+      # make sure taxa names match
+      for (n in make.unique(name_with_counts)){
+        k <- sub("\\s+[^ ]+$", "", n)
+        ord.data[grepl(gsub("[()]", "", k), gsub("[()]", "", ord.data))][1] <- n # remove parenthesis for grepl to work
+      }
+      agg.physeq@tax_table[,rank][order(agg.physeq@tax_table[,rank])] <- ord.data
     }
   }
 
