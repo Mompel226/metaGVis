@@ -1,0 +1,15 @@
+Package: metaGVis
+Title: Visualisation of the Microbial Ecology Analysis performed on compositional data obtained from DADA2, Kraken2, MetaPHlAn3 and HUMAnN3 metagenomic tools.
+Date: 2021-10-01
+Version: 0.1.0
+Author: Daniel Mompel Riera [aut, cre]
+Maintainer: Daniel Mompel Riera <daniel-mompel@globalmail.es>
+Description: This package takes as input the output files (OTU/ASV/Species_abundance table and Taxonomic table or Pathway abundance file) from DADA2, Kraken2, MetaPHlAn3 and HUMAnN3 metagenomic tools and performs a Microbial Ecology Analysis using a standard and/or a compositional data approach. All analyses are represented by one or several plots which are saved as png files in the specified folder.
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: 
+  magrittr, phyloseq, readxl, qiime2R, file2meco, tidyverse, data.table, vegan, dada2, ggpubr, ggdendro, zoo, pvclust, dendextend, ggraph, ggimage, tidygraph, microbiome, compositions, plotly, lqmm, rgl, philr, vegan, Polychrome, magick, harrietr, xtable, tools
+RoxygenNote: 7.1.2
+URL: https://github.com/Mompel226/metaGVis
+BugReports: https://github.com/Mompel226/metaGVis/issues
